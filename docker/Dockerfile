@@ -1,5 +1,7 @@
 FROM php:8.1-fpm-alpine
 
+RUN echo 'memory_limit = 4096M' >> /usr/local/etc/php/conf.d/docker-php-memory_limit.ini
+
 # Install composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 

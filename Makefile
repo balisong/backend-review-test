@@ -109,3 +109,9 @@ func-test: var/docker.up ## Run PhpUnit functionnal testsuite
 	@$(call log,Running ...)
 	$(PHP_EXEC) bin/phpunit -v --testsuite func --testdox
 	@$(call log_success,Done)
+
+.PHONY: phpstan
+phpstan: vendor ## Run PhpStan
+	@$(call log,Running ...)
+	@$(PHP_RUN) vendor/bin/phpstan analyse --level 5 src tests
+	@$(call log_success,Done)

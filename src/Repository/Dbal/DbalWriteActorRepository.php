@@ -13,12 +13,12 @@ class DbalWriteActorRepository implements WriteActorRepository
 {
     private Connection $connection;
 
-    private ReadActorRepository $readActorRepository;
+//    private ReadActorRepository $readActorRepository;
 
-    public function __construct(Connection $connection, ReadActorRepository $readActorRepository)
+    public function __construct(Connection $connection/*, ReadActorRepository $readActorRepository*/)
     {
         $this->connection = $connection;
-        $this->readActorRepository = $readActorRepository;
+//        $this->readActorRepository = $readActorRepository;
     }
 
     public function create(Actor $actor): void

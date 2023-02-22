@@ -13,12 +13,12 @@ class DbalWriteRepoRepository implements WriteRepoRepository
 {
     private Connection $connection;
 
-    private ReadRepoRepository $readRepoRepository;
+//    private ReadRepoRepository $readRepoRepository;
 
-    public function __construct(Connection $connection, ReadRepoRepository $readRepoRepository)
+    public function __construct(Connection $connection/*, ReadRepoRepository $readRepoRepository*/)
     {
         $this->connection = $connection;
-        $this->readRepoRepository = $readRepoRepository;
+//        $this->readRepoRepository = $readRepoRepository;
     }
 
     public function create(Repo $repo): void

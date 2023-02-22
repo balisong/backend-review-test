@@ -60,8 +60,12 @@ class ImportGitHubEventsCommand extends Command
         foreach($dateRange as $dateTime) {
             $io->text('importing '.$dateTime->format('Y-m-d H:i:s'));
             $importDateTime = \DateTimeImmutable::createFromMutable($dateTime);
-            $this->eventsImportService->importEvents($importDateTime);
-//            $this->eventsImportService->importEventsWithCache($importDateTime);
+            try {
+//                $this->eventsImportService->importEvents($importDateTime);
+                $this->eventsImportService->importEventsWithCache($importDateTime);
+            } catch (\Exception $e) {
+                $io->warning($e->getMessage());
+            }
         }
 
         $time_end = microtime(true);

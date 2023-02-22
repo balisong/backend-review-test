@@ -61,7 +61,7 @@ final class GitHubEventsImportService
         $this->cache = $cache;
     }
 
-    public function importEvents(\DateTimeInterface $importDateTime)
+    public function importEvents(\DateTimeInterface $importDateTime): void
     {
         $serializer = new Serializer([
             new DateTimeNormalizer(),
@@ -72,11 +72,9 @@ final class GitHubEventsImportService
         foreach ($rawEventsIterator as $rawEvent) {
             try {
                 $rawEvent['type'] = $this->mapGitHubEventType($rawEvent['type']);
-//                dump($rawEvent);
 
                 /** @var Event $event */
                 $event = $serializer->denormalize($rawEvent, Event::class);
-//                dd($event);
 
                 if(!$this->readActorRepository->exist($event->actor()->id)) {
                     $this->writeActorRepository->create($event->actor());
@@ -90,11 +88,12 @@ final class GitHubEventsImportService
                     $this->writeEventRepository->create($event);
                 }
             } catch (UnsupportedEventTypeException $e) {
+                //TODO add log
             }
         }
     }
 
-    public function importEventsWithCache(\DateTimeInterface $importDateTime)
+    public function importEventsWithCache(\DateTimeInterface $importDateTime): void
     {
         $serializer = new Serializer([
             new DateTimeNormalizer(),
@@ -131,7 +130,7 @@ final class GitHubEventsImportService
                     $this->writeEventRepository->create($event);
                 }
             } catch (\Exception $e) {
-                dump($e->getMessage());
+                //TODO add log
             }
         }
     }

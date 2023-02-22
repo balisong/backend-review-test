@@ -32,6 +32,7 @@ SQL;
         ]);
     }
 
+    /** @return array<string, int> */
     public function countByType(SearchInput $searchInput): array
     {
         $sql = <<<SQL
@@ -48,6 +49,7 @@ SQL;
         ]);
     }
 
+    /** @return array<int, array<string, int>> */
     public function statsByTypePerHour(SearchInput $searchInput): array
     {
         $sql = <<<SQL
@@ -76,6 +78,7 @@ SQL;
         return $data;
     }
 
+    /** @return array<int, array<string, int|string>> */
     public function getLatest(SearchInput $searchInput): array
     {
         $sql = <<<SQL

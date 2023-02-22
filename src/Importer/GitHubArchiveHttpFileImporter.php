@@ -17,6 +17,7 @@ final class GitHubArchiveHttpFileImporter implements GitHubArchiveImporter
         $this->httpClient = $httpClient;
     }
 
+    /** @return iterable<array<string, mixed>> */
     public function import(\DateTimeInterface $importDateTime): iterable
     {
         $response = $this->httpClient->request(
@@ -46,8 +47,7 @@ final class GitHubArchiveHttpFileImporter implements GitHubArchiveImporter
             $line_of_text = fgets($handle);
 
             try {
-                $json = $serializer->decode($line_of_text, 'json');
-                yield $json;
+                yield $serializer->decode($line_of_text, 'json');
             } catch (\Exception $e) {
                 dump($e->getMessage());
             }

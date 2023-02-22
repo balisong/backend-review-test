@@ -14,12 +14,12 @@ class DbalWriteEventRepository implements WriteEventRepository
 {
     private Connection $connection;
 
-    private ReadEventRepository $readEventRepository;
+//    private ReadEventRepository $readEventRepository;
 
-    public function __construct(Connection $connection, ReadEventRepository $readEventRepository)
+    public function __construct(Connection $connection/*, ReadEventRepository $readEventRepository*/)
     {
         $this->connection = $connection;
-        $this->readEventRepository = $readEventRepository;
+//        $this->readEventRepository = $readEventRepository;
     }
 
     public function create(Event $event): void

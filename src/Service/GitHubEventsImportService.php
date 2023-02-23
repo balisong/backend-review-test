@@ -78,19 +78,19 @@ final class GitHubEventsImportService
     {
         $this->logger->info(sprintf('Begin GitHubArchive import for %s', $importDateTime->format('Y-m-d H:i:s')));
 
-        $serializer = new Serializer([
-            new DateTimeNormalizer(),
-            new ObjectNormalizer(null, new CamelCaseToSnakeCaseNameConverter())
-        ]);
+//        $serializer = new Serializer([
+//            new DateTimeNormalizer(),
+//            new ObjectNormalizer(null, new CamelCaseToSnakeCaseNameConverter())
+//        ]);
 
         $rawEventsIterator = $this->gitHubArchiveImporter->import($importDateTime);
         foreach ($rawEventsIterator as $rawEvent) {
             try {
                 $rawEvent['type'] = $this->mapGitHubEventType($rawEvent['type']);
 
-                /** @var Event $event */
-                $event = $serializer->denormalize($rawEvent, Event::class);
-//                $event = Event::fromArray($rawEvent);
+//                /** @var Event $event */
+//                $event = $serializer->denormalize($rawEvent, Event::class);
+                $event = Event::fromArray($rawEvent);
 
                 $actorExist = $this->cache->get('exist_actor_'.$event->actor()->id(), function (ItemInterface $item) use ($event) {
                     $item->expiresAfter(3600);

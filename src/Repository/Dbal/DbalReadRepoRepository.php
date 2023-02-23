@@ -16,7 +16,6 @@ class DbalReadRepoRepository implements ReadRepoRepository
         $this->connection = $connection;
     }
 
-    //TODO refactor !!!!
     public function exist(int $id): bool
     {
         $sql = <<<SQL
@@ -26,7 +25,7 @@ class DbalReadRepoRepository implements ReadRepoRepository
         SQL;
 
         $result = $this->connection->fetchOne($sql, [
-            'id' => $id,
+            'id' => $id
         ]);
 
         return (bool) $result;

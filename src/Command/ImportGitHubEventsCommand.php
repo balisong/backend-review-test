@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Service\GitHubEventsImportService;
+use App\Dto\GitHubArchiveImportMessage;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * This command must import GitHub events.
@@ -20,12 +21,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand(name: 'app:import-github-events')]
 class ImportGitHubEventsCommand extends Command
 {
-    private GitHubEventsImportService $eventsImportService;
+    private MessageBusInterface $messageBus;
 
-    public function __construct(GitHubEventsImportService $eventsImportService)
+    public function __construct(MessageBusInterface $messageBus)
     {
         parent::__construct();
-        $this->eventsImportService = $eventsImportService;
+        $this->messageBus = $messageBus;
     }
 
     protected function configure(): void
@@ -37,8 +38,6 @@ class ImportGitHubEventsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $time_start = microtime(true);
-
         $io = new SymfonyStyle($input, $output);
         $io->title('GitHubArchive Event Importer');
 
@@ -53,24 +52,29 @@ class ImportGitHubEventsCommand extends Command
         $dateFrom = \DateTime::createFromFormat('Y-m-d', $inputDateFrom, $gitHubArchiveTimeZone);
         $dateFrom->setTime(0, 0, 0, 0);
 
+        if ($dateFrom > $date) {
+            $dateFrom->setDate((int)$date->format('Y'), (int)$date->format('m'), (int)$date->format('d'));
+        }
+
         $interval = \DateInterval::createFromDateString('1 hour');
         $dateRange = new \DatePeriod($dateFrom, $interval, $date);
 
+        $io->progressStart();
+        $messagesCount = 0;
+
         /** @var \DateTime $dateTime */
-        foreach($dateRange as $dateTime) {
-            $io->text('importing '.$dateTime->format('Y-m-d H:i:s'));
+        foreach($io->progressIterate($dateRange->getIterator()) as $dateTime) {
+            $messagesCount++;
             $importDateTime = \DateTimeImmutable::createFromMutable($dateTime);
             try {
-//                $this->eventsImportService->importEvents($importDateTime);
-                $this->eventsImportService->importEventsWithCache($importDateTime);
+                $this->messageBus->dispatch(new GitHubArchiveImportMessage($importDateTime));
             } catch (\Exception $e) {
                 $io->warning($e->getMessage());
             }
         }
 
-        $time_end = microtime(true);
-        dump('execution time', $time_end - $time_start);
+        $io->info(sprintf('%s hourly import messages sent to bus, run workers to consume messages', $messagesCount));
 
-        return 1;
+        return Command::SUCCESS;
     }
 }

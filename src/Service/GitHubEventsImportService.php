@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\GitHubArchiveImportMessage;
 use App\Entity\Event;
 use App\Entity\EventType;
 use App\Exception\UnsupportedEventTypeException;
@@ -15,6 +16,8 @@ use App\Repository\ReadRepoRepository;
 use App\Repository\WriteActorRepository;
 use App\Repository\WriteEventRepository;
 use App\Repository\WriteRepoRepository;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Serializer\NameConverter\CamelCaseToSnakeCaseNameConverter;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
@@ -22,6 +25,7 @@ use Symfony\Component\Serializer\Serializer;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
+#[AsMessageHandler]
 final class GitHubEventsImportService
 {
     private GitHubArchiveImporter $gitHubArchiveImporter;
@@ -40,6 +44,8 @@ final class GitHubEventsImportService
 
     private CacheInterface $cache;
 
+    private LoggerInterface $logger;
+
     public function __construct(
         GitHubArchiveHttpFileImporter $fileImporter,
         ReadActorRepository $readActorRepository,
@@ -48,7 +54,8 @@ final class GitHubEventsImportService
         WriteActorRepository $writeActorRepository,
         WriteEventRepository $writeEventRepository,
         WriteRepoRepository $writeRepoRepository,
-        CacheInterface $cache
+        CacheInterface $cache,
+        LoggerInterface $logger
     )
     {
         $this->gitHubArchiveImporter = $fileImporter;
@@ -59,10 +66,18 @@ final class GitHubEventsImportService
         $this->writeEventRepository = $writeEventRepository;
         $this->writeRepoRepository = $writeRepoRepository;
         $this->cache = $cache;
+        $this->logger = $logger;
+    }
+
+    public function __invoke(GitHubArchiveImportMessage $archiveImportMessage):void
+    {
+        $this->importEvents($archiveImportMessage->getArchiveDateTime());
     }
 
     public function importEvents(\DateTimeInterface $importDateTime): void
     {
+        $this->logger->info(sprintf('Begin GitHubArchive import for %s', $importDateTime->format('Y-m-d H:i:s')));
+
         $serializer = new Serializer([
             new DateTimeNormalizer(),
             new ObjectNormalizer(null, new CamelCaseToSnakeCaseNameConverter())
@@ -75,42 +90,11 @@ final class GitHubEventsImportService
 
                 /** @var Event $event */
                 $event = $serializer->denormalize($rawEvent, Event::class);
-
-                if(!$this->readActorRepository->exist($event->actor()->id)) {
-                    $this->writeActorRepository->create($event->actor());
-                }
-
-                if (!$this->readRepoRepository->exist($event->repo()->id())) {
-                    $this->writeRepoRepository->create($event->repo());
-                }
-
-                if (!$this->readEventRepository->exist($event->id())) {
-                    $this->writeEventRepository->create($event);
-                }
-            } catch (UnsupportedEventTypeException $e) {
-                //TODO add log
-            }
-        }
-    }
-
-    public function importEventsWithCache(\DateTimeInterface $importDateTime): void
-    {
-        $serializer = new Serializer([
-            new DateTimeNormalizer(),
-            new ObjectNormalizer(null, new CamelCaseToSnakeCaseNameConverter())
-        ]);
-
-        $rawEventsIterator = $this->gitHubArchiveImporter->import($importDateTime);
-        foreach ($rawEventsIterator as $rawEvent) {
-            try {
-                $rawEvent['type'] = $this->mapGitHubEventType($rawEvent['type']);
-
-                /** @var Event $event */
-                $event = $serializer->denormalize($rawEvent, Event::class);
+//                $event = Event::fromArray($rawEvent);
 
                 $actorExist = $this->cache->get('exist_actor_'.$event->actor()->id(), function (ItemInterface $item) use ($event) {
                     $item->expiresAfter(3600);
-                    return $this->readActorRepository->exist($event->actor()->id);
+                    return $this->readActorRepository->exist($event->actor()->id());
                 });
                 if(!$actorExist) {
                     $this->writeActorRepository->create($event->actor());
@@ -129,8 +113,8 @@ final class GitHubEventsImportService
                 if (!$this->readEventRepository->exist($event->id())) {
                     $this->writeEventRepository->create($event);
                 }
-            } catch (\Exception $e) {
-                //TODO add log
+            } catch (UnsupportedEventTypeException $e) {
+                $this->logger->debug($e->getMessage());
             }
         }
     }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Webmozart\Assert\Assert;
 
 /**
  * @ORM\Entity()
@@ -103,22 +102,32 @@ class Event
         return $this->payload;
     }
 
-    //TODO rename after validation ?
     public function createAt(): \DateTimeImmutable
     {
         return $this->createAt;
     }
 
-    public function getComment(): ?string
+    public function comment(): ?string
     {
         return $this->comment;
     }
 
-    /**
-     * @return int
-     */
-    public function getCount(): int
+    public function count(): int
     {
         return $this->count;
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            (int) $data['id'],
+            $data['type'],
+            Actor::fromArray($data['actor']),
+            Repo::fromArray($data['repo']),
+            $data['payload'],
+            new \DateTimeImmutable($data['created_at']),
+            $data['comment'] ?? null,
+        );
     }
 }

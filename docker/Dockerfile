@@ -27,8 +27,10 @@ RUN \
 RUN apk add --no-cache make
 
 # Install php extensions
-RUN apk add --no-cache postgresql-dev bash \
-    && docker-php-ext-install -j$(nproc) pdo_pgsql
+RUN apk add --no-cache postgresql-dev bash pcre-dev $PHPIZE_DEPS \
+    && docker-php-ext-install -j$(nproc) pdo_pgsql \
+    && pecl install redis \
+    && docker-php-ext-enable redis.so
 
 # Installing Symfony CLI
 RUN apk add --no-cache bash && \

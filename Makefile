@@ -125,5 +125,5 @@ produce: ## Run import command, produce messages from 2023-01-01 to 2023-01-31
 .PHONY:consume
 consume: ## Run symfony messenger worker to consume 1 async import message
 	@$(call log,Running ...)
-	@$(PHP_RUN) bin/console messenger:consume -vv --limit=1 async
+	@$(PHP_RUN) bin/console messenger:consume --limit=1 async
 	@$(call log_success,Done)

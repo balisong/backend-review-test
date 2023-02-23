@@ -115,6 +115,8 @@ final class GitHubEventsImportService
                 }
             } catch (UnsupportedEventTypeException $e) {
                 $this->logger->debug($e->getMessage());
+            } catch (\Exception $e) {
+                $this->logger->error($e->getTraceAsString());
             }
         }
     }

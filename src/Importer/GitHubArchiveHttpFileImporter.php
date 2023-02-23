@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Importer;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -12,9 +13,12 @@ final class GitHubArchiveHttpFileImporter implements GitHubArchiveImporter
 {
     private HttpClientInterface $httpClient;
 
-    public function __construct(HttpClientInterface $httpClient)
+    private LoggerInterface $logger;
+
+    public function __construct(HttpClientInterface $httpClient, LoggerInterface $logger)
     {
         $this->httpClient = $httpClient;
+        $this->logger = $logger;
     }
 
     /** @return iterable<array<string, mixed>> */
@@ -29,10 +33,6 @@ final class GitHubArchiveHttpFileImporter implements GitHubArchiveImporter
                 ]
             ]
         );
-
-//        if (200 !== $response->getStatusCode()) {
-//            throw new \Exception('...');
-//        }
 
         $tmpFileName = tempnam(sys_get_temp_dir(), 'backend-review-test_gh-archive_');
         $fileHandler = fopen($tmpFileName, 'w');
@@ -49,7 +49,7 @@ final class GitHubArchiveHttpFileImporter implements GitHubArchiveImporter
             try {
                 yield $serializer->decode($line_of_text, 'json');
             } catch (\Exception $e) {
-                dump($e->getMessage());
+                $this->logger->error($e->getTraceAsString());
             }
         }
 

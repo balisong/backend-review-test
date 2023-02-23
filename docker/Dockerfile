@@ -1,5 +1,7 @@
 FROM php:8.1-fpm-alpine
 
+RUN echo 'memory_limit = 4096M' >> /usr/local/etc/php/conf.d/docker-php-memory_limit.ini
+
 # Install composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -25,8 +27,10 @@ RUN \
 RUN apk add --no-cache make
 
 # Install php extensions
-RUN apk add --no-cache postgresql-dev bash \
-    && docker-php-ext-install -j$(nproc) pdo_pgsql
+RUN apk add --no-cache postgresql-dev bash pcre-dev $PHPIZE_DEPS \
+    && docker-php-ext-install -j$(nproc) pdo_pgsql \
+    && pecl install redis \
+    && docker-php-ext-enable redis.so
 
 # Installing Symfony CLI
 RUN apk add --no-cache bash && \

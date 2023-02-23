@@ -3,24 +3,24 @@
 namespace App\Controller;
 
 use App\Dto\SearchInput;
+use App\Entity\EventType;
 use App\Repository\ReadEventRepository;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
 class SearchController
 {
     private ReadEventRepository $repository;
-    private SerializerInterface $serializer;
+    private DenormalizerInterface $denormalizer;
 
     public function __construct(
         ReadEventRepository $repository,
-        SerializerInterface  $serializer
+        DenormalizerInterface $denormalizer
     ) {
         $this->repository = $repository;
-        $this->serializer = $serializer;
+        $this->denormalizer = $denormalizer;
     }
 
     /**
@@ -28,16 +28,16 @@ class SearchController
      */
     public function searchCommits(Request $request): JsonResponse
     {
-        $searchInput = $this->serializer->denormalize($request->query->all(), SearchInput::class);
+        $searchInput = $this->denormalizer->denormalize($request->query->all(), SearchInput::class);
 
         $countByType = $this->repository->countByType($searchInput);
 
         $data = [
             'meta' => [
                 'totalEvents' => $this->repository->countAll($searchInput),
-                'totalPullRequests' => $countByType['pullRequest'] ?? 0,
-                'totalCommits' => $countByType['commit'] ?? 0,
-                'totalComments' => $countByType['comment'] ?? 0,
+                'totalPullRequests' => $countByType[EventType::PULL_REQUEST] ?? 0,
+                'totalCommits' => $countByType[EventType::COMMIT] ?? 0,
+                'totalComments' => $countByType[EventType::COMMENT] ?? 0,
             ],
             'data' => [
                 'events' => $this->repository->getLatest($searchInput),

@@ -22,12 +22,12 @@ class Repo
     /**
      * @ORM\Column(type="string")
      */
-    public string $name;
+    private string $name;
 
     /**
      * @ORM\Column(type="string")
      */
-    public string $url;
+    private string $url;
 
     public function __construct(int $id, string $name, string $url)
     {
@@ -51,6 +51,7 @@ class Repo
         return $this->url;
     }
 
+    /** @param array<string, int|string> $data */
     public static function fromArray(array $data): self
     {
         return new self(

@@ -1,8 +1,11 @@
 <?php
 
-namespace App\Repository;
+declare(strict_types=1);
+
+namespace App\Repository\Dbal;
 
 use App\Dto\SearchInput;
+use App\Repository\ReadEventRepository;
 use Doctrine\DBAL\Connection;
 
 class DbalReadEventRepository implements ReadEventRepository
@@ -20,41 +23,50 @@ class DbalReadEventRepository implements ReadEventRepository
         SELECT sum(count) as count
         FROM event
         WHERE date(create_at) = :date
-        AND payload like %{$searchInput->keyword}%
+        AND CAST(payload as text) like :keyword
 SQL;
 
         return (int) $this->connection->fetchOne($sql, [
-            'date' => $searchInput->date
+            'date' => $searchInput->date->format('Y-m-d H:i:s'),
+            'keyword' => '%'.$searchInput->keyword.'%'
         ]);
     }
 
+    /** @return array<string, int> */
     public function countByType(SearchInput $searchInput): array
     {
-        $sql = <<<'SQL'
+        $sql = <<<SQL
             SELECT type, sum(count) as count
             FROM event
             WHERE date(create_at) = :date
-            AND payload like %{$searchInput->keyword}%
+            AND CAST(payload as text) LIKE :keyword
             GROUP BY type
 SQL;
 
         return $this->connection->fetchAllKeyValue($sql, [
-            'date' => $searchInput->date
+            'date' => $searchInput->date->format('Y-m-d H:i:s'),
+            'keyword' => '%'.$searchInput->keyword.'%'
         ]);
     }
 
+    /** @return array<int, array<string, int>> */
     public function statsByTypePerHour(SearchInput $searchInput): array
     {
         $sql = <<<SQL
-            SELECT extract(hour from create_at) as hour, type, sum(count) as count
+            SELECT extract(hour from create_at) as hour, CASE type
+                WHEN 'COM' THEN 'commit'
+                WHEN 'PR' THEN 'pullRequest'
+                WHEN 'MSG' THEN 'comment'
+            END as type, sum(count) as count
             FROM event
             WHERE date(create_at) = :date
-            AND payload like %{$searchInput->keyword}%
+            AND CAST(payload as text) like :keyword
             GROUP BY TYPE, EXTRACT(hour from create_at)
 SQL;
 
-        $stats = $this->connection->fetchAll($sql, [
-            'date' => $searchInput->date
+        $stats = $this->connection->fetchAllAssociative($sql, [
+            'date' => $searchInput->date->format('Y-m-d H:i:s'),
+            'keyword' => '%'.$searchInput->keyword.'%'
         ]);
 
         $data = array_fill(0, 24, ['commit' => 0, 'pullRequest' => 0, 'comment' => 0]);
@@ -66,18 +78,25 @@ SQL;
         return $data;
     }
 
+    /** @return array<int, array<string, int|string>> */
     public function getLatest(SearchInput $searchInput): array
     {
         $sql = <<<SQL
-            SELECT type, repo
-            FROM event
-            WHERE date(create_at) = :date
-            AND payload like %{$searchInput->keyword}%
+            SELECT e.type, to_json(r.*) as repo
+            FROM (
+                SELECT type, MAX(id) as max_id
+                FROM event
+                WHERE date(create_at) = :date AND CAST(payload as text) like :keyword
+                GROUP BY type
+                ORDER BY max_id DESC
+            ) as filtered_event
+            LEFT JOIN event e ON (filtered_event.max_id = e.id)
+            LEFT JOIN repo r ON (e.repo_id = r.id)
 SQL;
 
         $result = $this->connection->fetchAllAssociative($sql, [
-            'date' => $searchInput->date,
-            'keyword' => $searchInput->keyword,
+            'date' => $searchInput->date->format('Y-m-d H:i:s'),
+            'keyword' => '%'.$searchInput->keyword.'%'
         ]);
 
         $result = array_map(static function($item) {

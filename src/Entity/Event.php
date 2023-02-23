@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Webmozart\Assert\Assert;
 
 /**
  * @ORM\Entity()
@@ -46,6 +45,7 @@ class Event
 
     /**
      * @ORM\Column(type="json", nullable=false, options={"jsonb": true})
+     * @var array<string, mixed>
      */
     private array $payload;
 
@@ -59,7 +59,8 @@ class Event
      */
     private ?string $comment;
 
-    public function __construct(int $id, string $type, Actor $actor, Repo $repo, array $payload, \DateTimeImmutable $createAt, ?string $comment)
+    /** @param array<string, mixed> $payload */
+    public function __construct(int $id, string $type, Actor $actor, Repo $repo, array $payload, \DateTimeImmutable $createdAt, ?string $comment)
     {
         $this->id = $id;
         EventType::assertValidChoice($type);
@@ -67,7 +68,7 @@ class Event
         $this->actor = $actor;
         $this->repo = $repo;
         $this->payload = $payload;
-        $this->createAt = $createAt;
+        $this->createAt = $createdAt;
         $this->comment = $comment;
 
         if ($type === EventType::COMMIT) {
@@ -95,6 +96,7 @@ class Event
         return $this->repo;
     }
 
+    /** @return array<string, mixed> */
     public function payload(): array
     {
         return $this->payload;
@@ -105,8 +107,27 @@ class Event
         return $this->createAt;
     }
 
-    public function getComment(): ?string
+    public function comment(): ?string
     {
         return $this->comment;
+    }
+
+    public function count(): int
+    {
+        return $this->count;
+    }
+
+    /** @param array<string, mixed> $data */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            (int) $data['id'],
+            $data['type'],
+            Actor::fromArray($data['actor']),
+            Repo::fromArray($data['repo']),
+            $data['payload'],
+            new \DateTimeImmutable($data['created_at']),
+            $data['comment'] ?? null,
+        );
     }
 }

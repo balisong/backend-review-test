@@ -15,7 +15,7 @@ class EventFixtures extends Fixture
     public const ACTOR_1_ID = 1;
     public const REPO_1_ID = 1;
 
-    public function load(ObjectManager $manager)
+    public function load(ObjectManager $manager): void
     {
         $event = new Event(
             self::EVENT_1_ID,

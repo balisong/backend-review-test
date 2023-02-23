@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+
 /**
  * @ORM\Entity()
  * @ORM\Table(name="actor")
@@ -16,22 +17,22 @@ class Actor
      * @ORM\Column(type="bigint")
      * @ORM\GeneratedValue(strategy="NONE")
      */
-    public int $id;
+    private int $id;
 
     /**
      * @ORM\Column(type="string")
      */
-    public string $login;
+    private string $login;
 
     /**
      * @ORM\Column(type="string")
      */
-    public string $url;
+    private string $url;
 
     /**
      * @ORM\Column(type="string")
      */
-    public string $avatarUrl;
+    private string $avatarUrl;
 
     public function __construct(int $id, string $login, string $url, string $avatarUrl)
     {
@@ -62,6 +63,7 @@ class Actor
         return $this->avatarUrl;
     }
 
+    /** @param array<string, int|string> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -71,5 +73,4 @@ class Actor
             $data['avatar_url']
         );
     }
-
 }

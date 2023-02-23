@@ -5,6 +5,7 @@ namespace App\Tests\Func;
 use App\DataFixtures\EventFixtures;
 use App\Entity\Event;
 use Doctrine\ORM\Tools\SchemaTool;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
 use Liip\TestFixturesBundle\Services\DatabaseTools\AbstractDatabaseTool;
@@ -12,11 +13,11 @@ use Liip\TestFixturesBundle\Services\DatabaseTools\AbstractDatabaseTool;
 class EventControllerTest extends WebTestCase
 {
     protected AbstractDatabaseTool $databaseTool;
-    private static $client;
+    private static KernelBrowser $client;
 
     protected function setUp(): void
     {
-        static::$client = static::createClient();
+        self::$client = static::createClient();
 
         $entityManager = static::getContainer()->get('doctrine.orm.entity_manager');
         $metaData = $entityManager->getMetadataFactory()->getAllMetadata();
@@ -30,9 +31,9 @@ class EventControllerTest extends WebTestCase
         );
     }
 
-    public function testUpdateShouldReturnEmptyResponse()
+    public function testUpdateShouldReturnEmptyResponse(): void
     {
-        $client = static::$client;
+        $client = self::$client;
 
         $client->request(
             'PUT',
@@ -47,9 +48,9 @@ class EventControllerTest extends WebTestCase
     }
 
 
-    public function testUpdateShouldReturnHttpNotFoundResponse()
+    public function testUpdateShouldReturnHttpNotFoundResponse(): void
     {
-        $client = static::$client;
+        $client = self::$client;
 
         $client->request(
             'PUT',
@@ -74,9 +75,9 @@ class EventControllerTest extends WebTestCase
     /**
      * @dataProvider providePayloadViolations
      */
-    public function testUpdateShouldReturnBadRequest(string $payload, string $expectedResponse)
+    public function testUpdateShouldReturnBadRequest(string $payload, string $expectedResponse): void
     {
-        $client = static::$client;
+        $client = self::$client;
 
         $client->request(
             'PUT',
@@ -92,6 +93,7 @@ class EventControllerTest extends WebTestCase
 
     }
 
+    /** @return iterable<string, array<int, string>> */
     public function providePayloadViolations(): iterable
     {
         yield 'comment too short' => [
